@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Yandex Maps API - Parser</title>
+		<style>
+		    * { 
+                padding: 0;
+                margin: 0;
+                font-family: Arial, Helvetica, sans-serif;
+                box-sizing: border-box;
+                scroll-behavior: smooth;
+                transition: all 0.3s ease-out;
+                scrollbar-width: thin !important;
+                scrollbar-color: rgb(53, 53, 53) rgb(85, 85, 85) !important;
+            }
+            ymaps * {
+                transition: none;
+            }
+            .container>div, p, h1, h2, h3, h4, h5, h6, input, button {
+                /* padding-top: 1em; */
+                margin-bottom: 0.5em;
+            }
+            pre {
+                background-color: rgb(85, 85, 85);
+                border: solid 2px rgb(53, 53, 53);
+                border-radius: 10px;
+                word-wrap: break-word;
+                white-space: pre-wrap;
+                overflow-x: auto;
+                margin-bottom: 1em;
+                padding: 0.5em;
+            }
+            pre code {
+                font-family: monospace;
+                color: whitesmoke;
+            }
+            input, button {
+                background-color: white;
+                padding: 0.5em;
+                border: solid 2px gray;
+                border-radius: 10px;
+                outline: none;
+            }
+            form > ymaps * {
+                border-radius: 10px;
+            }
+            form > ymaps {
+                margin-top: 0.5em;
+            }
+            input[type="text"] {
+                width: 50%;
+            }
+            input:hover,
+            button:hover {
+                border: solid 2px dodgerblue;
+            }
+            button:active {
+                background-color: rgb(230, 240, 255);
+            }
+            .parseStatus {
+                overflow-x: auto;
+                min-height: 38px;
+                max-height: 38px;
+            }
+            .parseOutput {
+                height: 400px;
+            }
+            .flex {
+                display: flex;
+                gap: 2em;
+            }
+            .flex > .f-half {
+                width: 50%;
+            }
+            .mapParse .map {
+                height: 70vh;
+            }
+            .map {
+                border: solid 2px rgb(85, 85, 85);
+                background-color: gray;
+                border-radius: 10px;
+            }
+            .map > *, .map > * > *, .map > * > * > *, .map > * > * > * > * {
+                border-radius: 10px !important;
+            }
+            .container {
+                padding: 1em 10vw;
+            }
+            @media (max-width: 724px) {
+                .flex { 
+                    height: 100%;
+                    flex-wrap: wrap;
+                }
+                .flex > .f-half {
+                    width: 100%;
+                }
+            }
+		</style>
+		<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=[YOUR API KEY]" type="text/javascript"></script>
+		
+	</head>
+	<body>
+        <div class="container">
+            <h2>Парсер инфраструктуры</h2>
+            <h3>на основе Yandex.Maps JavaScript API (MapsAPI)</h3>
+            <form onsubmit="return false;">
+                <label class="header">Адрес объекта:</label>
+                <input type="text" id="searchAddress" placeholder="Введите адрес...">
+                <button type="submit" id="searchButton">Вперед!</button>
+            </form>
+        </div>
+        <div class="container flex mapParse">
+            <div class="map f-half" id="map"></div>
+            <div class="f-half">
+                <pre id="terminalScroll" class="parseStatus"><code id="parseStatus"></code></pre>
+                <h3>Кол-во объектов, всего:</h3>
+                <pre><code id="parseCount">NaN</code></pre>
+                <h3>Результат парсера:</h3>
+                <pre class="parseOutput"><code id="parseOutput">NaN</code></pre>
+            </div>
+        </div>
+	</body>
+    <script src="app.js" type="text/javascript"></script>
+</html>
