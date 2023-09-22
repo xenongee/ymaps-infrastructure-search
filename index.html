@@ -20,7 +20,6 @@
                 transition: none;
             }
             .container>div, p, h1, h2, h3, h4, h5, h6, input, button {
-                /* padding-top: 1em; */
                 margin-bottom: 0.5em;
             }
             pre {
@@ -60,21 +59,24 @@
             button:active {
                 background-color: rgb(230, 240, 255);
             }
-            .parseStatus {
+            .parserStatus {
                 overflow-x: auto;
-                min-height: 38px;
-                max-height: 38px;
-            }
-            .parseOutput {
-                height: 400px;
+                height: 38px;
             }
             .flex {
                 display: flex;
+                gap: 0.5em;
+            }
+            .flex-gap {
                 gap: 2em;
+            }
+            .flex-grow {
+                flex-grow: 1;
             }
             .flex > .f-half {
                 width: 50%;
             }
+            .parserResult,
             .mapParse .map {
                 height: 70vh;
             }
@@ -99,29 +101,46 @@
                 }
             }
 		</style>
-		<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=[YOUR API KEY]" type="text/javascript"></script>
+		<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey={YOUR_API_KEY}&suggest_apikey={YOUR API KEY}" type="text/javascript"></script>
 		
 	</head>
 	<body>
-        <div class="container">
-            <h2>Парсер инфраструктуры</h2>
-            <h3>на основе Yandex.Maps JavaScript API (MapsAPI)</h3>
-            <form onsubmit="return false;">
-                <label class="header">Адрес объекта:</label>
-                <input type="text" id="searchAddress" placeholder="Введите адрес...">
-                <button type="submit" id="searchButton">Вперед!</button>
-            </form>
-        </div>
-        <div class="container flex mapParse">
-            <div class="map f-half" id="map"></div>
-            <div class="f-half">
-                <pre id="terminalScroll" class="parseStatus"><code id="parseStatus"></code></pre>
-                <h3>Кол-во объектов, всего:</h3>
-                <pre><code id="parseCount">NaN</code></pre>
-                <h3>Результат парсера:</h3>
-                <pre class="parseOutput"><code id="parseOutput">NaN</code></pre>
+        <main>
+            <div class="container">
+                <h2>Поиск объектов инфраструктуры</h2>
+                <h3>Парсер объектов инфраструктуры по адресу, based on Yandex Maps JavaScript API</h3>
             </div>
-        </div>
+            <div class="container address-form">
+                <form onsubmit="return false;">
+                    <div>
+                        <p>Адрес:</p>
+                    </div>
+                    <div class="flex">
+                        <input class="flex-grow" type="text" id="infra-search-input-address" placeholder="Введите адрес...">
+                        <button type="submit" id="infra-search-btn-search">Выполнить</button>
+                    </div> 
+                </form>
+            </div>
+            <div class="container flex flex-gap mapParse">
+                <div class="f-half">
+                    <p>Статус:</p>
+                    <pre id="infra-search-status-wrapper" class="parserStatus"><code id="infra-search-status"></code></pre>
+                    <p>Карта:</p>
+                    <div class="map" id="ymap"></div>
+                </div>
+                <div class="f-half">
+                    <p>Кол-во объектов:</p>
+                    <pre><code id="infra-search-obj-count">NaN</code></pre>
+                    <p>Результат:</p>
+                    <pre class="parserResult"><code id="infra-search-result">NaN</code></pre>
+                </div>
+            </div>
+        </main>
+        <footer>
+            <div class="container">
+                <small>Created by Gleb "xenongee" Rublev, 2022-2023</small>
+            </div>
+        </footer>
 	</body>
     <script src="app.js" type="text/javascript"></script>
 </html>

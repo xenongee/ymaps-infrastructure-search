@@ -1,5 +1,10 @@
+/**
+ * Yandex Maps API parser infrastructure objects.
+ * Created by Gleb "xenongee" Rublev,  21.11.2022.
+ */
+
 const boundLatitude = 0.004500/2; // horizontal
-const boundLongitude = 0.008500/2; // vertical (h, v)
+const boundLongitude = 0.008500/2; // vertical
 let mapObject,
     geoObject,
     geoObjectCoordinates,
@@ -7,23 +12,30 @@ let mapObject,
     searchCategories,
     searchControl,
     searchResults;
-let searchButton = document.getElementById("searchButton");
-let searchAddress = document.getElementById("searchAddress");
-let parseCount = document.getElementById("parseCount");
-let parseOutput = document.getElementById("parseOutput");
-let parseStatus = document.getElementById("parseStatus");
-let terminalScroll = document.getElementById("terminalScroll");
+let searchAddress = document.getElementById("infra-search-input-address");
+let searchButton = document.getElementById("infra-search-btn-search");
+let searchStatusWrapper = document.getElementById("infra-search-status-wrapper");
+let searchStatusText = document.getElementById("infra-search-status");
+let searchObjCount = document.getElementById("infra-search-obj-count");
+let searchFinalResult = document.getElementById("infra-search-result");
 
+
+/**
+ * Initialize
+ */
 function init() {
-    terminalOutput("Инициализация.");
+    parserStatus("Инициализация.");
     // suggestions on search field
-    let searchAddressSuggestView = new ymaps.SuggestView("searchAddress");
+    let searchAddressSuggestView = new ymaps.SuggestView("infra-search-input-address");
     // run geocode on click event
     searchButton.onclick = () => geocode();
 }
 
+/**
+ * Start ymaps geocode
+ */
 function geocode() {
-    terminalOutput("Геокодируем адрес в координаты, получаем границы объекта поиска.");
+    parserStatus("Геокодируем адрес в координаты, получаем границы объекта поиска.");
     // value from html form
     let searchAddressValue = searchAddress.value;
     // geocoding object of search
@@ -50,12 +62,12 @@ function geocode() {
         }
 
         if (error) {
-            terminalOutput(error);
+            parserStatus(error);
         } else {
             // setting icon for map
             geoObject.options.set("preset", "islands#blueHomeCircleIcon");
             // getting bounds and coordinates
-            let geoObjectBounds = geoObject.properties.get("boundedBy");
+            // let geoObjectBounds = geoObject.properties.get("boundedBy");
             geoObjectCoordinates = geoObject.geometry.getCoordinates();
             geoObjectSearchBounds = [
                 // [(geoObjectBounds[0][0]-boundLatitude),(geoObjectBounds[0][1]-boundLongitude)],
@@ -63,13 +75,12 @@ function geocode() {
                 [(geoObjectCoordinates[0] - boundLatitude), (geoObjectCoordinates[1] - boundLongitude)],
                 [(geoObjectCoordinates[0] + boundLatitude), (geoObjectCoordinates[1] + boundLongitude)]
             ];
-            console.log(geoObjectSearchBounds);
+
             // map settings
             let mapState = {
                 center: geoObjectCoordinates,
                 zoom: 12,
                 controls: []
-                //controls: ['zoomControl'],
             };
             let searchControlParams = {
                 options: {
@@ -89,21 +100,21 @@ function geocode() {
  * Creating yandex.map object
  * @param {object} state map settings
  * @param {object} searchParams search settings
- * @param {bool} recreate recreate map
- * @param {object} parseResults if 'recreate' param is true, this param is required
+ * @param {boolean} [recreate=false] recreate map, only for final results
+ * @param {object} [parseResults=null] if 'recreate' param is true, this param is required
  */
 function createMap(state, searchParams, recreate = false, parseResults = null) {
     // destroying map
     if (mapObject && recreate) {
-        terminalOutput("Удаляем старую карту.");
+        parserStatus("Удаляем старую карту.");
         mapObject.destroy();
         mapObject = null;
     }
     // if map object is not created
     if (!mapObject) {
-        terminalOutput("Создаем карту, отображаем объект в виде иконки и границы.");
+        parserStatus("Создаем карту, отображаем объект в виде иконки и границы.");
         // creating map
-        mapObject = new ymaps.Map("map", state, {
+        mapObject = new ymaps.Map("ymap", state, {
             restrictMapArea: true
         });
         if (!recreate) {
@@ -121,7 +132,6 @@ function createMap(state, searchParams, recreate = false, parseResults = null) {
             borderRadius: 3
         });
         // adding graphics on map
-        //mapObject.geoObjects
         mapObject.geoObjects.add(geoObject); // dot on object
         mapObject.geoObjects.add(rectangle); // rectangle of search object
 
@@ -135,8 +145,13 @@ function createMap(state, searchParams, recreate = false, parseResults = null) {
     mapObject.setBounds(geoObjectSearchBounds);
 }
 
+/**
+ * Parsing map
+ * @async
+ * @returns {Promise<any>}
+ */
 async function parseMap() {
-    terminalOutput("Ищем новые объекты рядом с объектом поиска. Подождите...");
+    parserStatus("Ищем новые объекты рядом с объектом поиска. Подождите...");
     searchCategories = [
         [
             "Государственные лечебные учреждения",
@@ -215,70 +230,63 @@ async function parseMap() {
             "islands#blueMassTransitCircleIcon"
         ]
     ];
-    //console.log(searchCategories);
     let parseResults = new Object();
     let parseResultsSearchObjects = new Object();
 
     for (let i = 0; i < searchCategories.length; i++) {
         await search(i);
-        if (searchResults.length > 0) {
-            let idObj = 0;
-            // main parser object 
-            parseResults[i] = {
-                categoryName: searchCategories[i][0],
-                categoryIcon: searchCategories[i][1],
-                objects: {}
-            }
-            // reset previous results
-            parseResultsSearchObjects = [];
-            // console.log('parse_search_object>', searchResults);
-            // console.log('parse_category>', searchCategories[i][0]);
-            for (let j = 0; j < searchResults.length; j++) {
-                let searchObjectCoordinates = searchResults[j].geometry._coordinates;
-                // console.log('parse_loop>', j);
-                if (geoObjectSearchBounds[0][0] <= searchObjectCoordinates[0] &&
-                    searchObjectCoordinates[0] <= geoObjectSearchBounds[1][0] &&
-                    geoObjectSearchBounds[0][1] <= searchObjectCoordinates[1] &&
-                    searchObjectCoordinates[1] <= geoObjectSearchBounds[1][1]) {
-                    // console.log('parse_object_id>', idObj);
-                    // console.log('parse_object_name>', searchResults[j].properties._data.name);
-                    parseResults[i].objects = Object.assign(parseResultsSearchObjects, {
-                        [idObj]: {
-                            objCategory: searchResults[j].properties._data.categoriesText,
-                            objName: searchResults[j].properties._data.name,
-                            objAddress: searchResults[j].properties._data.address,
-                            objCoordinates: searchResults[j].geometry._coordinates,
-                        }
-                    });
-                    ++idObj;
-                } else {
-                    //console.log('parse_object_name_garbage>', searchResults[j].properties._data.name);
-                }
-                continue;
+        let idObj = 0;
+        // main parser object 
+        parseResults[i] = {
+            categoryName: searchCategories[i][0],
+            categoryIcon: searchCategories[i][1],
+            objects: {}
+        };
+        // reset previous results
+        parseResultsSearchObjects = [];
+
+        for (let j = 0; j < searchResults.length; j++) {
+            let searchObjectCoordinates = searchResults[j].geometry._coordinates;
+            if (geoObjectSearchBounds[0][0] <= searchObjectCoordinates[0] &&
+                searchObjectCoordinates[0] <= geoObjectSearchBounds[1][0] &&
+                geoObjectSearchBounds[0][1] <= searchObjectCoordinates[1] &&
+                searchObjectCoordinates[1] <= geoObjectSearchBounds[1][1]) {
+                parseResults[i].objects = Object.assign(parseResultsSearchObjects, {
+                    [idObj]: {
+                        objCategory: searchResults[j].properties._data.categoriesText,
+                        objName: searchResults[j].properties._data.name,
+                        objAddress: searchResults[j].properties._data.address,
+                        objCoordinates: searchResults[j].geometry._coordinates,
+                    }
+                });
+                ++idObj;
             }
         }
-        continue;
     }
-    console.log("parseResult>", parseResults);
     showResults(parseResults);
 }
 
 /**
  * Searching infrastructure objects 
+ * @async
  * @param {number} idCategories index of categories for search
+ * @returns {Promise<any>}
  */
 async function search(idCategories) {
     let searchCategoriesValue = searchCategories[idCategories][0];
     let term = "> Поиск по категории: " + searchCategoriesValue;
-    terminalOutput(term)
+    parserStatus(term)
     await searchControl.search(searchCategoriesValue).then(function () {
         searchResults = searchControl.getResultsArray();
-        // console.log(searchResults);
     });
 }
 
+/**
+ * Prints results
+ * @param {object} parseResults
+ */
 function showResults(parseResults) {
-    terminalOutput("Оформляем результат...");
+    parserStatus("Оформляем результат...");
 
     let parseResultsLength = Object.keys(parseResults).length;
 
@@ -286,12 +294,12 @@ function showResults(parseResults) {
         center: geoObjectCoordinates,
         zoom: 14,
         controls: []
-        //controls: ['zoomControl'],
     };
     let searchControlParams = {};
     createMap(mapState, searchControlParams, true, parseResults);
 
-    let resultToHtml = "", parseResultsEntryLength = 0;
+    let resultToHtml = "", 
+        parseResultsEntryLength = 0;
     for (let i = 0; i < parseResultsLength; i++) {
         let parseEntry = parseResults[i];
         let parseObjectsEntryLength = Object.keys(parseEntry.objects).length;
@@ -307,41 +315,47 @@ function showResults(parseResults) {
             resultToHtml += "Результаты отсутствуют <br><br>";
         }
     }
-    terminalOutput("Готово.");
+    parserStatus("Готово.");
     searchButton.onclick = () => {
-        terminalOutput("Перезагрузите страницу и введите новый запрос.");
+        parserStatus("Перезагрузите страницу и введите новый запрос.");
         mapObject.setBounds(geoObjectSearchBounds);
     }
-    parseCount.innerHTML = parseResultsEntryLength;
-    parseOutput.innerHTML = resultToHtml;
+    searchObjCount.innerHTML = parseResultsEntryLength;
+    searchFinalResult.innerHTML = resultToHtml;
 }
 
-function terminalOutput(message) {
-    parseStatus.innerHTML += message + "<br>";
-    terminalScroll.scrollTop = 9999;
-}
-
+/**
+ * Adds a ballons on map
+ * @param {object} parseResults
+ */
 function showIcons(parseResults) {
-    terminalOutput("!!!Отображаем объекты с парсера.");
-            console.log(parseResults);
-            let parseResultsLength = Object.keys(parseResults).length;
-            for (let i = 0; i < parseResultsLength; i++) {
-                let parseEntry = parseResults[i];
-                let parseObjectsEntryLength = Object.keys(parseEntry.objects).length;            
-                let parseGeoObjects = new ymaps.GeoObjectCollection({}, {
-                    preset: parseEntry.categoryIcon,
-                });
-                for (let j = 0; j < parseObjectsEntryLength; j++) {
-                    parseGeoObjects.add(new ymaps.Placemark(parseEntry.objects[j].objCoordinates, {
-                        balloonContentHeader: parseEntry.objects[j].objName,
-                        balloonContentBody: ["Адрес:", parseEntry.objects[j].objAddress].join(" "),
-                        balloonContentFooter: [parseEntry.objects[j].objCategory, "<br>", parseEntry.objects[j].objCoordinates].join(" "),
-                        hintContent: parseEntry.objects[j].objName
-                    }));
-                    mapObject.geoObjects.add(parseGeoObjects);
-                }
-                //console.log(parseObjectsEntryLength);
-            }
+    parserStatus("!!!Отображаем объекты с парсера.");
+    let parseResultsLength = Object.keys(parseResults).length;
+    for (let i = 0; i < parseResultsLength; i++) {
+        let parseEntry = parseResults[i];
+        let parseObjectsEntryLength = Object.keys(parseEntry.objects).length;            
+        let parseGeoObjects = new ymaps.GeoObjectCollection({}, {
+            preset: parseEntry.categoryIcon,
+        });
+        for (let j = 0; j < parseObjectsEntryLength; j++) {
+            parseGeoObjects.add(new ymaps.Placemark(parseEntry.objects[j].objCoordinates, {
+                balloonContentHeader: parseEntry.objects[j].objName,
+                balloonContentBody: ["Адрес:", parseEntry.objects[j].objAddress].join(" "),
+                balloonContentFooter: [parseEntry.objects[j].objCategory, "<br>", parseEntry.objects[j].objCoordinates].join(" "),
+                hintContent: parseEntry.objects[j].objName
+            }));
+            mapObject.geoObjects.add(parseGeoObjects);
+        }
+    }
+}
+
+/**
+ * Prints status
+ * @param {*} message 
+ */
+function parserStatus(message) {
+    searchStatusText.innerHTML += message + "<br>";
+    searchStatusWrapper.scrollTop = 9999;
 }
 
 ymaps.ready(init);
